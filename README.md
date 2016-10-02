@@ -1,5 +1,5 @@
 # SFZebu
-## Automated SFZ Creator for Zampler in NodeJS
+## Automated SFZ Creator For Zampler in NodeJS
 
 ### What it is
 I specifically made this for processing large multisample libraries to make a quick and dirty SFZ file for Zampler. It can't handle batch processing so you'll have to put each folder in one at a time. I might add this if there's enough interest or I find myself with over 100 folders to process for some reason. xD
