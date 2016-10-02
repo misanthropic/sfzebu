@@ -1,0 +1,29 @@
+{
+  "name": "sfzebu",
+  "version": "1.0.0",
+  "description": "Automated SFZ Maker for Zampler in NodeJS",
+  "main": "sfzebu.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/misanthropic/sfzebu.git"
+  },
+  "keywords": [
+    "sfz",
+    "zampler",
+    "samples",
+    "multisamples",
+    "soundfont"
+  ],
+  "author": "misanthropic <daffolily@live.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/misanthropic/sfzebu/issues"
+  },
+  "homepage": "https://github.com/misanthropic/sfzebu#readme",
+  "bin": {
+    "sfzebu": "./sfzebu.js"
+  }
+}
