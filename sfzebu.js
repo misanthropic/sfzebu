@@ -3,9 +3,9 @@
 const fs = require('fs');
 const path = require('path');
 
-// Command line arguments
-// First argument is the directory you want to
-// turn into a soundfont.
+//command line arguments
+//first argument is the directory you want to
+//turn into a soundfont.
 const sfPath = process.argv[2];
 
 //only these files will be parsed
@@ -14,15 +14,13 @@ var acceptExt = [
 ];
 
 function getFileNamesInFolder(folderPath) {
-	folderPath = path.resolve(folderPath); // Make it absolute.
+	folderPath = path.resolve(folderPath); //make it absolute.
 
 	if (fs.lstatSync(folderPath).isDirectory()) {
 		var filenames = fs.readdirSync(folderPath);
 
 		return filenames;
-	} else {
-		throw Error(`${folderPath} is not a directory!`);
-	}
+	} else {throw Error(`${folderPath} is not a directory!`);}
 }
 
 function parseSFZ() {
@@ -46,17 +44,12 @@ function parseSFZ() {
 					note.sample = names[f];
 					switch (names[f][c]) { //first two numbers are the note
 						case "a": case "A": note.letter = "a"; note.note = "10"; break;
-						//case "a#": case "A#": note = "11"; break;
 						case "b": case "B": note.letter = "b"; note.note = "12"; break;
 						case "c": case "C": note.letter = "c"; note.note = "01"; break;
-						//case "c#": case "C#": note = "02"; break;
 						case "d": case "D": note.letter = "d"; note.note = "03"; break;
-						//case "d#": case "D#": note = "04"; break;
 						case "e": case "E": note.letter = "e"; note.note = "05"; break;
 						case "f": case "F": note.letter = "f"; note.note = "06"; break;
-						//case "f#": case "F#": note = "07"; break;
 						case "g": case "G": note.letter = "g"; note.note = "08"; break;
-						//case "g#": case "G#": note = "09"; break;
 						case "#": note.letter = note.letter + "#"; //make it sharp and adjust note number
 							if (note.letter != "a#") {note.note = "0" + (parseInt(note.note) + 1).toString();}
 							else {note.note = (parseInt(note.note) + 1).toString();}
@@ -83,11 +76,6 @@ function parseSFZ() {
 			}
 		}
 	}
-	
-	//sort samples by octave
-	//notes = notes.sort(function(a,b){
-		//return parseInt(a.octave) - parseInt(b.octave);
-	//});
 	
 	//sort by note and octave
 	notes = notes.sort(function(a,b){
@@ -196,12 +184,12 @@ function keyCount(countFrom, countAmount, octave, dir) {
 }
 
 //find distance
-function distCount(countFrom, countTo, l, e, dir) {
+function distCount(countFrom, countTo, sOct, fOct, dir) {
 	var distance = 0;
 	var count = countFrom;
-	var nOct = l;
+	var nOct = sOct;
 	
-	while (count != countTo || nOct != e) {
+	while (count != countTo || nOct != fOct) {
 		if (dir == "up") {
 			distance++;
 			count++;	
@@ -225,8 +213,7 @@ function writeFile(filePath, contents) {
 }
 
 var names = getFileNamesInFolder(sfPath);
-
 var folderName = path.basename(sfPath);
 
-//If parseSFZ was written, this would write the SFZ file.
+//write sfz to text file
 writeFile(path.join(sfPath, folderName + ".sfz"), parseSFZ(names));
