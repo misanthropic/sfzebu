@@ -13,7 +13,7 @@ Parses the filenames in a folder and outputs a formatted SFZ with the folder's n
 ### How it works
 It looks for specific information in the filenames so make sure you name them accordingly. Note names and octaves must be in the filename and in a specific way. 
 
-Filename example: 'strum-c4-vel127'
+Filename example: `strum-c4-vel127`
 
 Adjacent notes meet in the middle for hikey and lokey. If there isn't an even number then the highest note will be pitched down by 1 extra semitone. SFZebu also assumes that the velocity mentioned in the filename is the highest you want that file to play. 
 	
