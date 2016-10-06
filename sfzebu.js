@@ -13,6 +13,9 @@ var acceptExt = [
 	".wav", ".ogg", ".mp3", ".aiff", ".aif"
 ];
 
+var noteExp = /(?:\\-|\b)[a-g]#?[0-7]/ig;
+var velExp = /(?:-vel)+[\d]/ig;
+
 function getFileNamesInFolder(folderPath) {
 	folderPath = path.resolve(folderPath); //make it absolute.
 
@@ -21,6 +24,23 @@ function getFileNamesInFolder(folderPath) {
 
 		return filenames;
 	} else {throw Error(`${folderPath} is not a directory!`);}
+}
+
+function setNote(noteLetter) {
+	switch (noteLetter) {
+		case "a": return "10";
+		case "a#": return "11";
+		case "b": return "12";
+		case "c": return "01";
+		case "c#": return "02";
+		case "d": return "03";
+		case "d#": return "04";
+		case "e": return "05";
+		case "f": return "06";
+		case "f#": return "07";
+		case "g": return "08";
+		case "g#": return "09";
+	}
 }
 
 function parseSFZ() {
@@ -33,56 +53,47 @@ function parseSFZ() {
 			letter : "n",
 			octave : {},
 			note : {},
+			velocity : {},
 			sample : {}
 		}; 
 		
 		if (acceptExt.includes(path.extname(names[f]))) {
-			notes.push(note);
+			notes.push(note); //push instance
+			note.sample = names[f]; //store the filename
 			
-			for (var c in names[f]) {
-				if (isNaN(names[f][c])) { //if it is a letter
-					note.sample = names[f];
-					switch (names[f][c]) { //first two numbers are the note
-						case "a": case "A": note.letter = "a"; note.note = "10"; break;
-						case "b": case "B": note.letter = "b"; note.note = "12"; break;
-						case "c": case "C": note.letter = "c"; note.note = "01"; break;
-						case "d": case "D": note.letter = "d"; note.note = "03"; break;
-						case "e": case "E": note.letter = "e"; note.note = "05"; break;
-						case "f": case "F": note.letter = "f"; note.note = "06"; break;
-						case "g": case "G": note.letter = "g"; note.note = "08"; break;
-						case "#": note.letter = note.letter + "#"; //make it sharp and adjust note number
-							if (note.letter != "a#") {note.note = "0" + (parseInt(note.note) + 1).toString();}
-							else {note.note = (parseInt(note.note) + 1).toString();}
-						break;
-						default: note.letter = "n";
-					}
-				} else { //if it is a number
-					if (note.letter != "n") {
-						var applied = false;
-						
-						switch (names[f][c]) { //last number is the octave
-							case "0": note.octave = "0"; applied = true; break;
-							case "1": note.octave = "1"; applied = true; break;
-							case "2": note.octave = "2"; applied = true; break;
-							case "3": note.octave = "3"; applied = true; break;
-							case "4": note.octave = "4"; applied = true; break;
-							case "5": note.octave = "5"; applied = true; break;
-							case "6": note.octave = "6"; applied = true; break;
-							case "7": note.octave = "7"; applied = true; break;
-							//default: note.letter = "n";
-						} if (applied == true) {break;}
-					}
-				} 
+			var noteNames = names[f].toLowerCase().match(noteExp);
+			var velNums = names[f].match(velExp);
+			
+			//console.log(velNums);
+			
+			if (noteNames.length > 1) {
+				console.log("Check", names[f], "for instances resembling note names.");
+				
+				for (var i in noteNames) {
+					console.log("Detected Sequence " + (parseInt(i) + 1) + " is " + noteNames[i]);
+				} process.exit(1);
+			} else {
+				if (noteNames[0].length > 2) {
+					note.letter = noteNames[0][0] + noteNames[0][1];
+					note.octave = noteNames[0][2];
+					note.note = setNote(noteNames[0][0] + noteNames[0][1]);
+				} else {
+					note.letter = noteNames[0][0];
+					note.octave = noteNames[0][1];
+					note.note = setNote(noteNames[0][0]);	
+				}
 			}
 		}
 	}
 	
-	//sort by note and octave
 	notes = notes.sort(function(a,b){
 		if (a.octave == b.octave) {
-			return parseInt(a.note) - parseInt(b.note);
-		} else {return parseInt(a.octave) - parseInt(b.octave);}
+			if (a.note == b.note) { return parseInt(a.velocity) - parseInt(b.velocity); } //by velocity
+			else { return parseInt(a.note) - parseInt(b.note); } //by note
+		} else { return parseInt(a.octave) - parseInt(b.octave); } //by octave 
 	});
+	
+	//console.log(notes);
 	
 	//build text file
 	for (var i in notes) {
