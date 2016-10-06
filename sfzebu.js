@@ -137,49 +137,6 @@ function parseSFZ() {
 			sfz = sfz + "hivel=" + notes[i].velocity + "\n";
 		}
 		
-		/*
-		if (i == 0) { //first in the array
-			//high = middleKey(notes[i], notes[parseInt(i) + 1], "up");
-			next = findNextNote(notes[i], notes, "up");
-			high = middleKey(notes[i], next, "up");
-			sfz = sfz + "hikey=" + high + "\n";
-			
-			console.log(next);
-			
-			if (notes[i].velocity != null) {
-				sfz = sfz + "hivel=" + notes[i].velocity + "\n";
-			} else {console.log("this is it");}
-		} else if (i == notes.length - 1) { //last in the array
-			//low = middleKey(notes[i], notes[parseInt(i) - 1], "down");
-			next = findNextNote(notes[i], notes, "down");
-			low = middleKey(notes[i], next, "down");
-			sfz = sfz + "lokey=" + low + "\n";
-			
-			//low velocity
-			if (notes[i].velocity != null) { //if velocity was specified at all in filename
-				if (notes[i-1].letter == notes[i].letter && notes[i-1].octave == notes[i].octave) {
-					vel = setVelocity(notes[i-1].velocity, "high");
-					sfz = sfz + "lovel=" + vel + "\n";
-				} sfz = sfz + "hivel=" + notes[i].velocity + "\n"; //high velocity
-			}
-		} else { //middle of the array
-			next = findNextNote(notes[i], notes, "down");
-			low = middleKey(notes[i], next, "down");
-			//low = middleKey(notes[i], notes[parseInt(i) - 1], "down");
-			next = findNextNote(notes[i], notes, "up");
-			//high = middleKey(notes[i], notes[parseInt(i) + 1], "up");
-			high = middleKey(notes[i], next, "up");
-			sfz = sfz + "lokey=" + low + "\n";
-			sfz = sfz + "hikey=" + high + "\n";
-			
-			if (notes[i].velocity != null) {
-				if (notes[i-1].letter == notes[i].letter && notes[i-1].octave == notes[i].octave) {
-					vel = setVelocity(notes[i-1].velocity, "high");
-					sfz = sfz + "lovel=" + vel + "\n";
-				} sfz = sfz + "hivel=" + notes[i].velocity + "\n";
-			}
-		}
-		*/
 		sfz = sfz + "pitch_keycenter=" + notes[i].letter + notes[i].octave + "\n";
 		sfz += "\n";
 	} 
@@ -194,21 +151,21 @@ function setVelocity(vel) {
 }
 
 function findNextNote(self, friends, dir) {
-	var okay = false;
+	var foundSelf = false;
 	
 	if (dir == "up") {
 		for (var f = 0; f < friends.length; f++) {
-			if (okay) {
+			if (foundSelf) {
 				if (self.letter != friends[f].letter) {return friends[f];} 
 				else if (self.octave != friends[f].octave) {return friends[f];} 
-			} else if (friends[f] == self) {okay = true;}	
+			} else if (friends[f] == self) {foundSelf = true;}	
 		}
 	} else { 
 		for (var g = friends.length - 1; g > -1; g--) {
-			if (okay) {
+			if (foundSelf) {
 				if (self.letter != friends[g].letter) {return friends[g];} 
 				else if (self.octave != friends[g].octave) {return friends[g];} 	
-			} else if (friends[g] == self) {okay = true;}	
+			} else if (friends[g] == self) {foundSelf = true;}	
 		}
 	}
 }
