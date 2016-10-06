@@ -14,7 +14,7 @@ var acceptExt = [
 ];
 
 var noteExp = /(?:\\-|\b)[a-g]#?[0-7]/ig;
-var velExp = /(?:-vel)+[\d]/ig;
+var velExp = /(vel[^-]+)[\d]/ig;
 
 function getFileNamesInFolder(folderPath) {
 	folderPath = path.resolve(folderPath); //make it absolute.
@@ -46,6 +46,7 @@ function setNote(noteLetter) {
 function parseSFZ() {
 	var sfz = "";
 	var notes = [];
+	var venabled = false;
 	
 	//get conversion information
 	for (var f in names) {
@@ -53,7 +54,7 @@ function parseSFZ() {
 			letter : "n",
 			octave : {},
 			note : {},
-			velocity : {},
+			velocity : null,
 			sample : {}
 		}; 
 		
@@ -64,29 +65,40 @@ function parseSFZ() {
 			var noteNames = names[f].toLowerCase().match(noteExp);
 			var velNums = names[f].match(velExp);
 			
-			//console.log(velNums);
+			if (velNums != null) { //store velocity
+				note.velocity = velNums[0].replace(/\D/g,''); //isolate the velocity integers
+				venabled = true;
+			} else if (venabled) {
+				console.log("Check", names[f], "for missing velocity markings.");
+				process.exit(1);
+			}
 			
-			if (noteNames.length > 1) {
-				console.log("Check", names[f], "for instances resembling note names.");
-				
-				for (var i in noteNames) {
-					console.log("Detected Sequence " + (parseInt(i) + 1) + " is " + noteNames[i]);
-				} process.exit(1);
+			if (noteNames == null) { //debug if dashes aren't used properly
+				console.log("Check", names[f], "for improper formatting.");
+				process.exit(1);
 			} else {
-				if (noteNames[0].length > 2) {
-					note.letter = noteNames[0][0] + noteNames[0][1];
-					note.octave = noteNames[0][2];
-					note.note = setNote(noteNames[0][0] + noteNames[0][1]);
-				} else {
-					note.letter = noteNames[0][0];
-					note.octave = noteNames[0][1];
-					note.note = setNote(noteNames[0][0]);	
+				if (noteNames.length > 1) { //too many instances resembling note names
+					console.log("Check", names[f], "for instances resembling note names.");
+					
+					for (var i in noteNames) {
+						console.log("Detected Sequence " + (parseInt(i) + 1) + " is " + noteNames[i]);
+					} process.exit(1);
+				} else { //store note name
+					if (noteNames[0].length > 2) {
+						note.letter = noteNames[0][0] + noteNames[0][1];
+						note.octave = noteNames[0][2];
+						note.note = setNote(noteNames[0][0] + noteNames[0][1]);
+					} else {
+						note.letter = noteNames[0][0];
+						note.octave = noteNames[0][1];
+						note.note = setNote(noteNames[0][0]);	
+					}
 				}
 			}
 		}
 	}
 	
-	notes = notes.sort(function(a,b){
+	notes = notes.sort(function(a,b) {
 		if (a.octave == b.octave) {
 			if (a.note == b.note) { return parseInt(a.velocity) - parseInt(b.velocity); } //by velocity
 			else { return parseInt(a.note) - parseInt(b.note); } //by note
@@ -97,30 +109,108 @@ function parseSFZ() {
 	
 	//build text file
 	for (var i in notes) {
+		var down = null;
+		var up = null;
 		var low = "";
 		var high = "";
+		var vel = "";
 		
 		sfz = sfz + "<region>\n";
 		sfz = sfz + "sample=" + notes[i].sample + "\n";
 		
-		if (i == 0) {
-			high = middleKey(notes[i], notes[parseInt(i) + 1], "up");
-			sfz = sfz + "hikey=" + high + "\n";
-		} else if (i == notes.length - 1) {
-			low = middleKey(notes[i], notes[parseInt(i) - 1], "down");
-			sfz = sfz + "lokey=" + low + "\n";
-		} else {
-			low = middleKey(notes[i], notes[parseInt(i) - 1], "down");
-			high = middleKey(notes[i], notes[parseInt(i) + 1], "up");
-			sfz = sfz + "lokey=" + low + "\n";
-			sfz = sfz + "hikey=" + high + "\n";
+		down = findNextNote(notes[i], notes, "down");
+		up = findNextNote(notes[i], notes, "up");
+		
+		if (down != null) {low = middleKey( notes[i], down, "down"); }
+		if (up != null) {high = middleKey( notes[i], up, "up"); }
+		if (low != "") {sfz = sfz + "lokey=" + low + "\n";}
+		if (high != "") {sfz = sfz + "hikey=" + high + "\n";}
+		
+		if (notes[i].velocity != null) {
+			if (i > 0) {
+				if (notes[i-1].letter == notes[i].letter && notes[i-1].octave == notes[i].octave) {
+					vel = setVelocity(notes[i-1].velocity, "high");
+					sfz = sfz + "lovel=" + vel + "\n";
+				} 
+			}
+			
+			sfz = sfz + "hivel=" + notes[i].velocity + "\n";
 		}
 		
+		/*
+		if (i == 0) { //first in the array
+			//high = middleKey(notes[i], notes[parseInt(i) + 1], "up");
+			next = findNextNote(notes[i], notes, "up");
+			high = middleKey(notes[i], next, "up");
+			sfz = sfz + "hikey=" + high + "\n";
+			
+			console.log(next);
+			
+			if (notes[i].velocity != null) {
+				sfz = sfz + "hivel=" + notes[i].velocity + "\n";
+			} else {console.log("this is it");}
+		} else if (i == notes.length - 1) { //last in the array
+			//low = middleKey(notes[i], notes[parseInt(i) - 1], "down");
+			next = findNextNote(notes[i], notes, "down");
+			low = middleKey(notes[i], next, "down");
+			sfz = sfz + "lokey=" + low + "\n";
+			
+			//low velocity
+			if (notes[i].velocity != null) { //if velocity was specified at all in filename
+				if (notes[i-1].letter == notes[i].letter && notes[i-1].octave == notes[i].octave) {
+					vel = setVelocity(notes[i-1].velocity, "high");
+					sfz = sfz + "lovel=" + vel + "\n";
+				} sfz = sfz + "hivel=" + notes[i].velocity + "\n"; //high velocity
+			}
+		} else { //middle of the array
+			next = findNextNote(notes[i], notes, "down");
+			low = middleKey(notes[i], next, "down");
+			//low = middleKey(notes[i], notes[parseInt(i) - 1], "down");
+			next = findNextNote(notes[i], notes, "up");
+			//high = middleKey(notes[i], notes[parseInt(i) + 1], "up");
+			high = middleKey(notes[i], next, "up");
+			sfz = sfz + "lokey=" + low + "\n";
+			sfz = sfz + "hikey=" + high + "\n";
+			
+			if (notes[i].velocity != null) {
+				if (notes[i-1].letter == notes[i].letter && notes[i-1].octave == notes[i].octave) {
+					vel = setVelocity(notes[i-1].velocity, "high");
+					sfz = sfz + "lovel=" + vel + "\n";
+				} sfz = sfz + "hivel=" + notes[i].velocity + "\n";
+			}
+		}
+		*/
 		sfz = sfz + "pitch_keycenter=" + notes[i].letter + notes[i].octave + "\n";
 		sfz += "\n";
 	} 
 	
 	return sfz;
+}
+
+function setVelocity(vel) {
+	vel = parseInt(vel);
+	vel = vel + 1;
+	return vel.toString();
+}
+
+function findNextNote(self, friends, dir) {
+	var okay = false;
+	
+	if (dir == "up") {
+		for (var f = 0; f < friends.length; f++) {
+			if (okay) {
+				if (self.letter != friends[f].letter) {return friends[f];} 
+				else if (self.octave != friends[f].octave) {return friends[f];} 
+			} else if (friends[f] == self) {okay = true;}	
+		}
+	} else { 
+		for (var g = friends.length - 1; g > -1; g--) {
+			if (okay) {
+				if (self.letter != friends[g].letter) {return friends[g];} 
+				else if (self.octave != friends[g].octave) {return friends[g];} 	
+			} else if (friends[g] == self) {okay = true;}	
+		}
+	}
 }
 
 //find note between samples
