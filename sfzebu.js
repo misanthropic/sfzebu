@@ -10,7 +10,7 @@ const sfPath = process.argv[2];
 
 //only these files will be parsed
 var acceptExt = [
-	".wav", ".ogg", ".mp3", ".aiff", ".aif"
+	".wav", ".ogg", ".mp3", ".aiff", ".aif", ".flac"
 ];
 
 var noteExp = /(?:\\-|\b)[a-g]#?[0-7]/ig;
@@ -46,7 +46,7 @@ function setNote(noteLetter) {
 function parseSFZ() {
 	var sfz = "";
 	var notes = [];
-	var venabled = false;
+	var velocityEnabled = false;
 	
 	//get conversion information
 	for (var f in names) {
@@ -67,8 +67,12 @@ function parseSFZ() {
 			
 			if (velNums != null) { //store velocity
 				note.velocity = velNums[0].replace(/\D/g,''); //isolate the velocity integers
-				venabled = true;
-			} else if (venabled) {
+				
+				if (parseInt(note.velocity) > 127) { //test with a 0 in front
+					console.log("File " + names[f] + " -vel is greater than 127.");
+					process.exit(1);
+				} else {velocityEnabled = true;}
+			} else if (velocityEnabled) {
 				console.log("Check", names[f], "for missing velocity markings.");
 				process.exit(1);
 			}
@@ -84,7 +88,7 @@ function parseSFZ() {
 						console.log("Detected Sequence " + (parseInt(i) + 1) + " is " + noteNames[i]);
 					} process.exit(1);
 				} else { //store note name
-					if (noteNames[0].length > 2) {
+					if (noteNames[0].length > 2) { //note is sharp
 						note.letter = noteNames[0][0] + noteNames[0][1];
 						note.octave = noteNames[0][2];
 						note.note = setNote(noteNames[0][0] + noteNames[0][1]);
